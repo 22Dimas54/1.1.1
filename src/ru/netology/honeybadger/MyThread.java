@@ -1,20 +1,20 @@
 package ru.netology.honeybadger;
 
-public class MyThread extends Thread{
+public class MyThread extends Thread {
     public MyThread(ThreadGroup threadGroup, Runnable runnable) {
-        super(threadGroup,runnable);
+        super(threadGroup, runnable);
     }
 
     @Override
     public void run() {
         try {
-            while(!isInterrupted()) {
+            while (!isInterrupted()) {
                 Thread.sleep(3000);
-                System.out.printf("Я поток %s. Всем привет!\n",getName());
+                System.out.printf("Я поток %s. Всем привет!\n", getName());
             }
         } catch (InterruptedException err) {
 
-        } finally{
+        } finally {
             System.out.printf("%s завершен\n", getName());
         }
     }

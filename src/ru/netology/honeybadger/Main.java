@@ -1,40 +1,66 @@
 package ru.netology.honeybadger;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
+
+import static java.lang.Thread.currentThread;
+
 public class Main {
+    final private static int maxCount = 3;
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
 
-        Runnable runnable = () -> System.out.println("Не понял зачем и куда этот Переопределенный run!");
-        ThreadGroup threadGroup = new ThreadGroup("threadGroup");
-        System.out.println("Создаю потоки...");
-        MyThread myThread1 = new MyThread(threadGroup, runnable);
-        MyThread myThread2 = new MyThread(threadGroup, runnable);
-        MyThread myThread3 = new MyThread(threadGroup, runnable);
-        MyThread myThread4 = new MyThread(threadGroup, runnable);
-
-        myThread1.setName("1");
-        myThread2.setName("2");
-        myThread3.setName("3");
-        myThread4.setName("4");
-
-        myThread1.start();
-        myThread2.start();
-        myThread3.start();
-        myThread4.start();
-
+        Callable<String> myCallable1 = createCallableInteger("1");
+        Callable<String> myCallable2 = createCallableInteger("2");
+        Callable<String> myCallable3 = createCallableInteger("3");
+        Callable<String> myCallable4 = createCallableInteger("4");
+        List<Callable<String>> taskList = new ArrayList<>();
+        taskList.add(myCallable1);
+        taskList.add(myCallable2);
+        taskList.add(myCallable3);
+        taskList.add(myCallable4);
+        final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        List<Future<String>> resultList = null;
         try {
-            myThread1.sleep(3000);
-            myThread2.sleep(3000);
-            myThread3.sleep(3000);
-            myThread4.sleep(3000);
-        } catch (Exception e) {
+            resultList = executorService.invokeAll(taskList);
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
-        System.out.println("Завершаю все потоки");
-        threadGroup.interrupt();
-        if (myThread1.isInterrupted() && myThread2.isInterrupted() && myThread3.isInterrupted() && myThread4.isInterrupted()){
-            threadGroup.destroy();
+        for (int i = 0; i < resultList.size(); i++) {
+            Future<String> future = resultList.get(i);
+            try {
+                System.out.println(future.get());
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
         }
+        try {
+            String resultInvokeAll = executorService.invokeAny(taskList);
+            System.out.println(resultInvokeAll);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        executorService.shutdown();
+    }
+
+    private static Callable<String> createCallableInteger(String name) {
+        return () -> {
+            int count = 0;
+            currentThread().setName(name);
+            System.out.printf("Я поток %s. Всем привет!\n", currentThread().getName());
+            try {
+                while (!currentThread().isInterrupted() && count < maxCount) {
+                    Thread.sleep(1000);
+                    System.out.printf("Я поток %s. Всем привет!\n", currentThread().getName());
+                    count++;
+                }
+            } catch (InterruptedException err) {
+
+            } finally {
+                System.out.printf("%s завершен\n", currentThread().getName());
+            }
+            return "Поток " + currentThread().getName() + " вывел " + count + " сообщений";
+        };
     }
 }
